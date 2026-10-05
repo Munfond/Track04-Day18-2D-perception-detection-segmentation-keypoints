@@ -1,0 +1,90 @@
+{
+  "bonus_4c_explanation": "# Bonus 4C — Kiểm tra flip_idx trên val lật gương\n\nTrain hai model từ yolo26n-pose.pt, cùng seed=0, epochs=40, imgsz=640, fliplr mặc định; thiết bị cuda. Dùng best.pt của từng model. Model giải phẫu hoán đổi left/right; model đồng nhất giữ nguyên chỉ số. Val gương lật ảnh, x → 1 − x và hoán đổi nhãn keypoint theo FLIP_IDX giải phẫu.\n\n| Model | mAP50 gốc | mAP50 gương | mAP50-95 gốc | mAP50-95 gương |\n|---|---:|---:|---:|---:|\n| flip_idx giải phẫu | 0.9950 | 0.9950 | 0.4573 | 0.4388 |\n| flip_idx đồng nhất | 0.9950 | 0.8775 | 0.4169 | 0.2977 |\n\nTrên lần chạy này, chênh lệch mAP50-95 (giải phẫu trừ đồng nhất) là +0.0404 trên val gốc và +0.1411 trên val gương. Model giải phẫu đổi -0.0185 và model đồng nhất đổi -0.1192 khi chuyển sang val gương. Đây là số liệu đo được, không giả định trước rằng model nào chắc chắn hơn.\n\nMetric có thể che lỗi là Pose mAP trên val gốc: toàn bộ hổ cùng quay phải, nên metric đó không kiểm tra khả năng giữ đúng quy ước trái/phải khi gặp hướng quay trái. Pose mAP50 còn dùng ngưỡng OKS thấp hơn mAP50-95; với sigma đều 1/12 và các chân gần nhau, đảo nhãn có thể vẫn đạt ngưỡng ghép đúng, nên mAP cao chưa chứng minh đúng giải phẫu. Nếu cả hai model vẫn cho số liệu gần nhau trên val gương, thí nghiệm chưa làm lộ lỗi qua mAP; cần xem keypoint từng chân và đo lỗi hoán đổi, không kết luận quy ước đồng nhất là đúng.\n\nTập val tốt hơn cần ảnh thật của cả hai hướng, đủ tư thế/che khuất/kích thước, nhãn giải phẫu nhất quán và báo cáo riêng theo hướng cùng sai số từng cặp left/right. Val gương là phép kiểm tra có kiểm soát, không thay thế ảnh triển khai thật; một seed chưa đủ kết luận khác biệt có ý nghĩa thống kê.\n",
+  "progress": {
+    "box_iou": "ok",
+    "nms": "ok",
+    "batched_nms": "ok",
+    "average_precision": "ok",
+    "mask_iou": "ok",
+    "polygon_to_mask": "ok",
+    "mask_to_yolo_seg": "ok",
+    "autolabel": "ok",
+    "oks": "ok",
+    "joint_angle": "ok",
+    "FLIP_IDX": "ok"
+  },
+  "latency": [
+    {
+      "Cấu hình": "one-to-many + NMS, conf 0.25",
+      "preprocess (ms)": 1.7,
+      "inference (ms)": 9.82,
+      "postprocess (ms)": 1.2,
+      "số box": 5
+    },
+    {
+      "Cấu hình": "one-to-many + NMS, conf 0.001",
+      "preprocess (ms)": 1.61,
+      "inference (ms)": 8.48,
+      "postprocess (ms)": 1.25,
+      "số box": 203
+    },
+    {
+      "Cấu hình": "one-to-one NMS-free, conf 0.25",
+      "preprocess (ms)": 1.68,
+      "inference (ms)": 9.06,
+      "postprocess (ms)": 0.41,
+      "số box": 5
+    },
+    {
+      "Cấu hình": "one-to-one NMS-free, conf 0.001",
+      "preprocess (ms)": 1.62,
+      "inference (ms)": 8.94,
+      "postprocess (ms)": 0.39,
+      "số box": 204
+    }
+  ],
+  "result_4b": {
+    "flip_idx": "giải phẫu",
+    "epochs": 40,
+    "imgsz": 640,
+    "Box mAP50-95": 0.9303488492063492,
+    "Pose mAP50": 0.995,
+    "Pose mAP50-95": 0.4573462529843696,
+    "train (phút)": 4.4
+  },
+  "result_4c": [
+    {
+      "Model": "flip_idx giải phẫu",
+      "Pose mAP50 — val gốc": 0.995,
+      "Pose mAP50 — val lật gương": 0.995,
+      "Pose mAP50-95 — val gốc": 0.4573462529843696,
+      "Pose mAP50-95 — val lật gương": 0.43884777970456634
+    },
+    {
+      "Model": "flip_idx đồng nhất",
+      "Pose mAP50 — val gốc": 0.995,
+      "Pose mAP50 — val lật gương": 0.8775428816466551,
+      "Pose mAP50-95 — val gốc": 0.4169217121481716,
+      "Pose mAP50-95 — val lật gương": 0.29772304416546624
+    }
+  ],
+  "answers": {
+    "Q1": "Ảnh letterbox 640×480 có 80×60 + 40×30 + 20×15 = 6.300 dự đoán ở các stride 8, 16, 32; ảnh 640×640 có 8.400 vì chiều rộng lưới lớn hơn.\nBox lệch phải và xuống đúng nửa kích thước xảy ra khi nhãn gốc dùng tâm cxcywh nhưng bị đọc thành góc trên-trái xywh: lấy tâm làm góc trên-trái khiến cả box dịch thêm (w/2, h/2).",
+    "Q2": "Trong lần chạy này, chênh lệch lớn nhất là postprocess (ms) ở conf 0.001: one-to-many 1.25 ms và one-to-one 0.39 ms (chênh 0.86 ms).\nVề cơ chế, conf thấp giữ nhiều ứng viên nên NMS phải lọc và so IoU nhiều hơn; cảnh đông cũng tăng số ứng viên, còn one-to-one học ghép một dự đoán với một đối tượng.\nCPU chịu chi phí hậu xử lý này rõ hơn và trên NPU, NMS có thể phải chạy trên host, thêm truyền dữ liệu; mức lợi ích thực tế phải đọc từ bảng vì cả thời gian inference và nhiễu đo đều ảnh hưởng.",
+    "Q3": "Hai box người cùng class có IoU 0.75 sẽ bị NMS ngưỡng 0.7 loại box có score thấp hơn, có thể đếm thiếu một công nhân.\nTăng ngưỡng giúp giữ các người đứng sát nhưng dễ còn duplicate; giảm ngưỡng loại duplicate mạnh hơn nhưng tăng bỏ sót trong cảnh đông.\nHead one-to-many cung cấp nhiều positive và tín hiệu giám sát dày khi train, giúp học đặc trưng; head one-to-one học ghép duy nhất để suy luận không cần NMS.",
+    "Q4": "Semantic có thể đếm thiếu khi hai người chạm nhau thành một vùng, hoặc đếm thừa khi một người bị che khuất/phân đoạn đứt thành nhiều vùng; lần chạy này có 8 vùng person trong ảnh 4 người.\nPanoptic gán cả class lẫn instance ID cho các đối tượng things, nên phân biệt từng người và vẫn gán nhãn stuff cho nền.\nTrong box xe buýt, class chiếm nhiều pixel nhất là train (63.5%); khác biệt miền dữ liệu Cityscapes với ảnh mẫu và hình dáng xe tương tự nhau có thể gây nhầm, nhưng đây là giả thuyết nguyên nhân cần kiểm tra thêm.",
+    "Q5": "YOLO-seg kết hợp prototype dùng chung ở độ phân giải thấp với hệ số riêng nên vật nhỏ/chi tiết mảnh dễ mất biên; tăng độ phân giải ảnh có thể giúp nhưng không khôi phục thông tin đã mất.\nMask R-CNN dùng lưới 28×28 cho mỗi RoI nên khi phóng lên object lớn, mỗi ô ứng với nhiều pixel và biên có thể thô; vật nhỏ vẫn khó do backbone và RoI sampling.\nChọn IoU cao nhất độc lập có thể ghép nhiều mask YOLO vào cùng một mask Mask R-CNN và bỏ qua instance khác, còn Hungarian ràng buộc ghép 1–1 để tối đa tổng IoU.",
+    "Q6": "Điểm A chọn gần như toàn bộ người mặc áo màu be: mask 47.441 pixel, IoU với mask box khoảng 0.987; điểm B chọn một mảnh nền/vỉa hè giữa hai chân, chỉ 2.714 pixel và IoU gần 0.000, dù B vẫn nằm trong box người.\nBox người chứa cả nền nên một điểm trong box chưa chắc nằm trên người; prompt box cung cấp phạm vi đối tượng rõ hơn, nhưng box hoặc mask sai vẫn phải được kiểm tra và sửa trước khi train.\nTôi dùng SAM trực tiếp khi cần phân đoạn linh hoạt theo prompt và đủ tài nguyên/thời gian, còn với camera thời gian thực có class cố định thì dùng SAM tạo nhãn, sửa tay rồi train YOLO-seg nhỏ.",
+    "Q7": "Khi bỏ lọc, model vẫn trả về toạ độ đầu gối/mắt cá dù bộ phận thật ở ngoài khung: y dự đoán nằm từ 700.2 đến 710.0 trên ảnh cao 720 px.\nArgmax heatmap luôn chọn một vị trí cực đại trong miền giải mã RoI, kể cả khi không có bằng chứng rõ ràng về khớp; nó không tự xác nhận rằng điểm thật nhìn thấy được.\nVì vậy cần score từng keypoint và kiểm tra phạm vi ảnh trước khi dùng điểm tính góc hay cảnh báo; logit R-CNN không phải xác suất nên ngưỡng không thể dùng y hệt conf YOLO.",
+    "Q8": "Trong đồ thị lần chạy này, OKS người 40×80 xuống dưới 0.5 ở khoảng 8 px ở các mức đã đo, còn người 250×500 chưa dưới 0.5 trong khoảng 0–30 px đã đo.\nTrục x là độ lệch chuẩn nhiễu Gauss mỗi toạ độ, không phải mọi keypoint đều lệch đúng từng ấy pixel; người nhỏ bị phạt nặng hơn vì OKS chuẩn hoá sai số theo diện tích object.\nSigma mắt nhỏ hơn hông vì vị trí mắt được gán nhãn nhất quán/chính xác hơn nên sai lệch bị phạt mạnh hơn; với camera người chỉ cao 80 px, vài pixel sai có thể giảm OKS đáng kể, cần đủ độ phân giải và lọc keypoint thiếu tin cậy.",
+    "Q9": "Luật nghiêng thân trên 60° có thể báo nhầm khi người cúi nhặt đồ, nằm nghỉ hoặc camera bị nghiêng; nó bỏ sót khi người ngã theo hướng gần trục nhìn, còn thân trông thẳng, hoặc vai/hông bị che nên không đủ conf.\nXoay ảnh làm tư thế khác phân bố huấn luyện và đổi bối cảnh/gravity cues nên detector có thể bỏ người, dù số người thật không thay đổi.\nHệ thống thật cần tracking qua thời gian, tốc độ đổi tư thế/độ cao, thời gian nằm bất động, hiệu chỉnh camera và dữ liệu ngã/không ngã để đánh giá false alarm, rồi quy trình xác minh cảnh báo.",
+    "Q10": "Lần chạy này train có 210 hổ quay phải/0 quay trái và val có 53/0.\nVal cùng hướng có thể vẫn cho mAP cao với flip_idx đồng nhất, nên mAP không nhất thiết giảm rõ và không chứng minh quy ước trái/phải đúng; muốn định lượng cần thí nghiệm hai model ở 4C.\nBug xuất hiện khi triển khai gặp hổ quay trái/ảnh gương và cần đúng nhãn giải phẫu: model có thể dự đoán vị trí gần đúng nhưng đảo bên; val cần cả hai hướng và kiểm tra lỗi theo từng cặp trái/phải.",
+    "Q11": "Trong lần chạy này, OKS trung bình là 0.745, không bỏ sót hổ (0/53 ảnh), nhưng có 4/53 ảnh nghi đảo trái/phải; biểu đồ cho thấy right_front_paw có sai số chuẩn hoá lớn nhất, khoảng 0.26.\nKiểu lỗi thứ nhất là nghi gán nhầm chân trái/phải: ở Frame_31.jpg và Frame_65.jpg, dự đoán các chân gần nhau và OKS tăng từ 0.631 lên 0.657, từ 0.665 lên 0.696 sau khi hoán đổi nhãn; cần kiểm tra lại nhãn từng cặp left/right, giữ FLIP_IDX giải phẫu và bổ sung ảnh hai hướng quay để giảm học lệch theo hướng.\nKiểu lỗi thứ hai là định vị bàn chân vào giữa hai vị trí nhãn: ở Frame_54.jpg và Frame_51.jpg, các dấu X của bàn chân lệch rõ so với điểm tròn trong khi đầu/thân khá gần nhãn; OKS lần lượt chỉ 0.631 và 0.634, và đổi trái/phải còn giảm xuống 0.522 và 0.527 nên đây không đơn thuần là đảo nhãn.\nĐể khắc phục lỗi định vị, tôi sẽ kiểm tra lại nhãn bàn chân và bổ sung ảnh chân ở nhiều pha bước, chồng/che nhau hoặc nhoè chuyển động, kèm augmentation phù hợp và ảnh đủ độ phân giải để model học vị trí bàn chân rõ hơn.",
+    "Q12": "Sigma 1/12 cho tất cả keypoint là mặc định tiện lợi nhưng giả định mọi điểm có cùng độ bất định, trong khi mũi thường rõ hơn gốc đuôi hay khớp bị che; mAP có thể che các sai lệch quan trọng về nhãn.\nTôi sẽ cho nhiều người gán nhãn độc lập cùng một tập ảnh đại diện đủ hướng, kích thước và che khuất, rồi đo phân tán của từng keypoint quanh đồng thuận, chuẩn hoá theo căn diện tích object để ước lượng sigma riêng.\nCần công bố quy ước, loại điểm không có nhãn, giữ sigma cố định khi so model và kiểm tra trên dữ liệu độc lập; không chỉnh sigma để làm đẹp mAP của model đang chấm."
+  },
+  "env": {
+    "device": "cuda",
+    "torch": "2.11.0+cu130",
+    "ultralytics": "8.4.171"
+  }
+}
